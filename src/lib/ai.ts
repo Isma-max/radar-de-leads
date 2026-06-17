@@ -1,18 +1,18 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import type { Lead, NewsItem } from "./types";
 
-// Modelo por defecto: el más capaz de la familia Opus. Configurable por env.
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
+// Modelo por defecto: Gemini 2.5 Flash, excelente velocidad y economía.
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-let _client: Anthropic | null = null;
-function client(): Anthropic {
+let _client: GoogleGenAI | null = null;
+function client(): GoogleGenAI {
   if (_client) return _client;
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.GEMINI_API_KEY) {
     throw new Error(
-      "Falta ANTHROPIC_API_KEY. Agrégala a tu .env.local (consíguela en https://console.anthropic.com/)."
+      "Falta GEMINI_API_KEY. Agrégala a tu .env.local (consíguela en Google AI Studio)."
     );
   }
-  _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  _client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   return _client;
 }
 
@@ -34,7 +34,7 @@ function newsContext(news: NewsItem): string {
 // Usa structured outputs para garantizar un JSON parseable.
 // ────────────────────────────────────────────────────────────────
 export async function generateLead(news: NewsItem): Promise<Lead> {
-  const system = [
+  const systemInstruction = [
     "Eres un editor de contenidos para un canal chileno que produce videos cortos",
     "(Facebook, YouTube Shorts, TikTok y Reels). Tu trabajo es transformar una noticia",
     "en un 'lead' accionable para grabar un video rápido.",
@@ -51,72 +51,66 @@ export async function generateLead(news: NewsItem): Promise<Lead> {
     "Responde en español de Chile. Sé concreto y práctico.",
   ].join("\n");
 
-  // Nota: `output_config` (structured outputs) y `thinking` pueden no estar
-  // tipados en todas las versiones del SDK; casteamos los params para evitar
-  // errores de compilación sin perder la garantía en runtime.
-  const params: any = {
-    model: MODEL,
-    max_tokens: 3000,
-    system,
-    messages: [{ role: "user", content: prompt }],
-    output_config: {
-      format: {
-        type: "json_schema",
-        schema: {
-          type: "object",
-          properties: {
-            gancho: {
-              type: "string",
-              description:
-                "Frase de apertura (hook) de 1-2 líneas para los primeros 3 segundos del video.",
-            },
-            angulo: {
-              type: "string",
-              description:
-                "El ángulo editorial: desde qué enfoque contar la noticia para maximizar interés.",
-            },
-            porQueFunciona: {
-              type: "string",
-              description:
-                "Por qué esta historia puede funcionar como video corto (emoción, conflicto, utilidad, etc.).",
-            },
-            formato: {
-              type: "string",
-              description:
-                "Formato recomendado y duración aproximada (ej: 'Short vertical 30-45s con texto en pantalla').",
-            },
-            advertencias: {
-              type: "string",
-              description:
-                "Advertencias legales y reputacionales relevantes. Si no hay, indícalo explícitamente.",
-            },
-          },
-          required: [
-            "gancho",
-            "angulo",
-            "porQueFunciona",
-            "formato",
-            "advertencias",
-          ],
-          additionalProperties: false,
-        },
+  const schema = {
+    type: "object",
+    properties: {
+      gancho: {
+        type: "string",
+        description:
+          "Frase de apertura (hook) de 1-2 líneas para los primeros 3 segundos del video.",
+      },
+      angulo: {
+        type: "string",
+        description:
+          "El ángulo editorial: desde qué enfoque contar la noticia para maximizar interés.",
+      },
+      porQueFunciona: {
+        type: "string",
+        description:
+          "Por qué esta historia puede funcionar como video corto (emoción, conflicto, utilidad, etc.).",
+      },
+      formato: {
+        type: "string",
+        description:
+          "Formato recomendado y duración aproximada (ej: 'Short vertical 30-45s con texto en pantalla').",
+      },
+      advertencias: {
+        type: "string",
+        description:
+          "Advertencias legales y reputacionales relevantes. Si no hay, indícalo explícitamente.",
       },
     },
+    required: [
+      "gancho",
+      "angulo",
+      "porQueFunciona",
+      "formato",
+      "advertencias",
+    ],
   };
 
-  if (MODEL.includes("opus") || MODEL.includes("3-7")) {
-    params.thinking = { type: "adaptive" };
-  }
+  const response = await client().models.generateContent({
+    model: MODEL,
+    contents: prompt,
+    config: {
+      systemInstruction,
+      responseMimeType: "application/json",
+      responseSchema: schema as any,
+    },
+  });
 
-  const response = await client().messages.create(params as any);
-  return parseJson<Lead>(textOf(response));
+  const text = response.text;
+  if (!text) {
+    throw new Error("La respuesta de Gemini está vacía.");
+  }
+  return parseJson<Lead>(text);
 }
 
 // ────────────────────────────────────────────────────────────────
 // Generar guion: texto limpio listo para locución.
 // ────────────────────────────────────────────────────────────────
 export async function generateScript(news: NewsItem): Promise<string> {
-  const system = [
+  const systemInstruction = [
     "Eres un guionista de videos cortos para un canal chileno.",
     "Escribes guiones para locución: texto plano, en español de Chile, que un locutor",
     "pueda leer de corrido. Nada de markdown, viñetas, ni acotaciones técnicas dentro del texto.",
@@ -148,27 +142,15 @@ export async function generateScript(news: NewsItem): Promise<string> {
     "Devuelve SOLO el texto del guion, listo para leer en voz alta.",
   ].join("\n");
 
-  const params: any = {
+  const response = await client().models.generateContent({
     model: MODEL,
-    max_tokens: 2500,
-    system,
-    messages: [{ role: "user", content: prompt }],
-  };
+    contents: prompt,
+    config: {
+      systemInstruction,
+    },
+  });
 
-  if (MODEL.includes("opus") || MODEL.includes("3-7")) {
-    params.thinking = { type: "adaptive" };
-  }
-
-  const response = await client().messages.create(params as any);
-  return textOf(response).trim();
-}
-
-function textOf(response: Anthropic.Message): string {
-  const block = response.content.find((b) => b.type === "text");
-  if (!block || block.type !== "text") {
-    throw new Error("La respuesta del modelo no contiene texto.");
-  }
-  return block.text;
+  return (response.text || "").trim();
 }
 
 // Parseo tolerante: si el modelo envuelve el JSON en ```json ... ``` lo limpia.
@@ -176,7 +158,6 @@ function parseJson<T>(raw: string): T {
   let text = raw.trim();
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fenced) text = fenced[1].trim();
-  // Recorta a las llaves externas por si hay texto extra.
   const first = text.indexOf("{");
   const last = text.lastIndexOf("}");
   if (first !== -1 && last !== -1) text = text.slice(first, last + 1);
