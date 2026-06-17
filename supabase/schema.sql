@@ -79,8 +79,8 @@ alter table public.news    enable row level security;
 -- Fuentes de ejemplo (medios chilenos). Edítalas a gusto.
 -- ────────────────────────────────────────────────────────────────
 insert into public.sources (name, url, category, weight) values
-  ('BioBioChile',            'https://www.biobiochile.cl/lista/rss',                 'Nacional',    60),
-  ('Emol',                   'https://emol.com/rss/rss.asp?canal=todas',             'Nacional',    60),
-  ('La Tercera',             'https://www.latercera.com/feed/',                      'Nacional',    60),
-  ('T13',                    'https://www.t13.cl/rss',                               'Nacional',    55)
+  ('Cooperativa - Últimas Noticias',         'https://www.cooperativa.cl/noticias/site/tax/port/all/rss____1.xml',     'General',         60),
+  ('Cooperativa - País (Nacional)',          'https://www.cooperativa.cl/noticias/site/tax/port/all/rss_1___1.xml',   'Nacional',        60),
+  ('Cooperativa - Deportes',                 'https://www.cooperativa.cl/noticias/site/tax/port/all/rss_3___1.xml',   'Deportes',        55),
+  ('Cooperativa - Espectáculos y Cultura',   'https://www.cooperativa.cl/noticias/site/tax/port/all/rss_4___1.xml',   'Entretenimiento', 50)
 on conflict (url) do nothing;
