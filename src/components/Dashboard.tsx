@@ -21,6 +21,7 @@ export default function Dashboard({ projectId }: { projectId?: string }) {
   // modal
   const [selected, setSelected] = useState<NewsItem | null>(null);
   const [busy, setBusy] = useState<"lead" | "script" | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!projectId) return; // Esperar a que el ID del proyecto esté definido
@@ -109,6 +110,13 @@ export default function Dashboard({ projectId }: { projectId?: string }) {
     } finally {
       setBusy(null);
     }
+  }
+
+  function copyLink(url: string, id: string) {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1500);
+    });
   }
 
   return (
@@ -235,14 +243,20 @@ export default function Dashboard({ projectId }: { projectId?: string }) {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setSelected(item)}
-                        className="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100"
+                        className="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100 font-medium"
                       >
                         Ver
+                      </button>
+                      <button
+                        onClick={() => copyLink(item.url, item.id)}
+                        className="rounded border border-slate-300 px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50 font-medium"
+                      >
+                        {copiedId === item.id ? "¡Copiado!" : "Copiar Link"}
                       </button>
                       {item.status !== "seleccionada" && (
                         <button
                           onClick={() => updateStatus(item, "seleccionada")}
-                          className="rounded border border-amber-300 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50"
+                          className="rounded border border-amber-300 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50 font-medium"
                         >
                           Seleccionar
                         </button>
@@ -250,7 +264,7 @@ export default function Dashboard({ projectId }: { projectId?: string }) {
                       {item.status !== "descartada" && (
                         <button
                           onClick={() => updateStatus(item, "descartada")}
-                          className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-500 hover:bg-slate-100"
+                          className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 font-medium"
                         >
                           Descartar
                         </button>

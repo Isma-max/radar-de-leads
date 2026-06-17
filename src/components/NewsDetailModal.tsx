@@ -19,9 +19,9 @@ export function NewsDetailModal({
   onGenerateLead,
   onGenerateScript,
 }: Props) {
-  const [copied, setCopied] = useState<"lead" | "script" | null>(null);
+  const [copied, setCopied] = useState<"lead" | "script" | "link" | null>(null);
 
-  function copy(text: string, which: "lead" | "script") {
+  function copy(text: string, which: "lead" | "script" | "link") {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(which);
       setTimeout(() => setCopied(null), 1500);
@@ -90,14 +90,23 @@ export function NewsDetailModal({
                 </span>
               ))}
             </div>
-            <a
-              href={news.url}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-block text-sm text-blue-600 hover:underline"
-            >
-              Abrir noticia original ↗
-            </a>
+            <div className="mt-3 flex items-center gap-3">
+              <a
+                href={news.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm text-blue-600 hover:underline"
+              >
+                Abrir noticia original ↗
+              </a>
+              <span className="text-slate-300">·</span>
+              <button
+                onClick={() => copy(news.url, "link")}
+                className="text-sm text-indigo-600 hover:underline font-medium"
+              >
+                {copied === "link" ? "¡Enlace copiado!" : "Copiar enlace"}
+              </button>
+            </div>
           </section>
 
           {/* Acciones */}
