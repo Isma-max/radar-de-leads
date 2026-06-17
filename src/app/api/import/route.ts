@@ -16,7 +16,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const secret = process.env.CRON_SECRET;
-    if (secret) {
+    if (secret && req.method === "GET") {
       // Acepta header propio o el bearer que envía Vercel Cron automáticamente.
       const ok =
         req.headers.get("x-cron-secret") === secret ||
