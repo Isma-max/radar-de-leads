@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +15,28 @@ export async function GET() {
     return `${val.slice(0, showLen)}...${val.slice(-5)}`;
   };
 
+  let dbResult = {};
+  try {
+    const db = getSupabaseAdmin();
+    const { data, error } = await db.from("news").select("*").limit(5);
+    dbResult = {
+      success: !error,
+      count: data ? data.length : 0,
+      error: error ? error.message : null,
+      firstTitle: data && data[0] ? data[0].title : null,
+    };
+  } catch (e: any) {
+    dbResult = {
+      success: false,
+      error: e.message || "Catch error",
+    };
+  }
+
   return NextResponse.json({
     url,
     anon: mask(anon),
     service: mask(service),
     gemini: mask(gemini, 8),
+    dbResult,
   });
 }
