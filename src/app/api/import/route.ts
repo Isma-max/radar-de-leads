@@ -62,68 +62,110 @@ export async function POST(req: NextRequest) {
       error?: string;
     }[] = [];
 
-    let totalInserted = 0;
-
-    for (const source of (sources ?? []) as Source[]) {
+    // 1. Fetch all feeds in parallel
+    const fetchPromises = (sources ?? []).map(async (source) => {
       try {
         const entries = await fetchFeed(source.url);
-        let inserted = 0;
-
-        for (const entry of entries) {
-          const { score, signals } = scoreNews({
-            title: entry.title,
-            summary: entry.summary,
-            publishedAt: entry.publishedAt,
-            sourceWeight: source.weight,
-            category: source.category,
-          });
-
-          // upsert por url: si ya existe no la duplicamos (ignoreDuplicates).
-          const { error: insErr, count } = await db
-            .from("news")
-            .upsert(
-              {
-                project_id: projectId,
-                source_id: source.id,
-                source_name: source.name,
-                title: entry.title,
-                url: entry.url,
-                published_at: entry.publishedAt,
-                category: source.category,
-                summary: entry.summary,
-                signals,
-                score,
-                status: "nueva",
-              },
-              { onConflict: "url", ignoreDuplicates: true, count: "exact" }
-            );
-
-          if (insErr) {
-            // Un error en un item no debe frenar todo el feed.
-            continue;
-          }
-          if (count && count > 0) inserted += count;
-        }
-
-        totalInserted += inserted;
-        results.push({
-          source: source.name,
-          fetched: entries.length,
-          inserted,
-        });
-
-        await db
-          .from("sources")
-          .update({ last_fetched_at: new Date().toISOString() })
-          .eq("id", source.id);
+        return { source, entries, error: null };
       } catch (e) {
+        return {
+          source,
+          entries: [],
+          error: e instanceof Error ? e.message : "Error al leer el feed",
+        };
+      }
+    });
+
+    const fetchResults = await Promise.all(fetchPromises);
+
+    // 2. Gather all news entries and compile database records
+    const newsToUpsert: any[] = [];
+    const successfulSourceIds: string[] = [];
+
+    for (const res of fetchResults) {
+      const { source, entries, error } = res;
+      if (error) {
         results.push({
           source: source.name,
           fetched: 0,
           inserted: 0,
-          error: e instanceof Error ? e.message : "Error al leer el feed",
+          error,
+        });
+        continue;
+      }
+
+      successfulSourceIds.push(source.id);
+
+      for (const entry of entries) {
+        const { score, signals } = scoreNews({
+          title: entry.title,
+          summary: entry.summary,
+          publishedAt: entry.publishedAt,
+          sourceWeight: source.weight,
+          category: source.category,
+        });
+
+        newsToUpsert.push({
+          project_id: projectId,
+          source_id: source.id,
+          source_name: source.name,
+          title: entry.title,
+          url: entry.url,
+          published_at: entry.publishedAt,
+          category: source.category,
+          summary: entry.summary,
+          signals,
+          score,
+          status: "nueva",
         });
       }
+    }
+
+    // 3. Perform a single bulk upsert in Supabase
+    let totalInserted = 0;
+    const insertedCountBySource: Record<string, number> = {};
+
+    if (newsToUpsert.length > 0) {
+      const { data: insertedRows, error: insErr } = await db
+        .from("news")
+        .upsert(
+          newsToUpsert,
+          { onConflict: "url", ignoreDuplicates: true }
+        )
+        .select("source_id");
+
+      if (insErr) throw insErr;
+
+      if (insertedRows) {
+        totalInserted = insertedRows.length;
+        for (const row of insertedRows) {
+          insertedCountBySource[row.source_id] = (insertedCountBySource[row.source_id] || 0) + 1;
+        }
+      }
+    }
+
+    // 4. Update last_fetched_at for all successful sources in a single query
+    if (successfulSourceIds.length > 0) {
+      const { error: updErr } = await db
+        .from("sources")
+        .update({ last_fetched_at: new Date().toISOString() })
+        .in("id", successfulSourceIds);
+      
+      if (updErr) {
+        console.error("Error updating last_fetched_at for sources:", updErr);
+      }
+    }
+
+    // 5. Populate remaining results with insertion counts
+    for (const res of fetchResults) {
+      const { source, entries, error } = res;
+      if (error) continue; // Already added to results above
+
+      results.push({
+        source: source.name,
+        fetched: entries.length,
+        inserted: insertedCountBySource[source.id] || 0,
+      });
     }
 
     return NextResponse.json({ ok: true, totalInserted, results });
