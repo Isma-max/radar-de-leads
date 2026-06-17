@@ -54,10 +54,9 @@ export async function generateLead(news: NewsItem): Promise<Lead> {
   // Nota: `output_config` (structured outputs) y `thinking` pueden no estar
   // tipados en todas las versiones del SDK; casteamos los params para evitar
   // errores de compilación sin perder la garantía en runtime.
-  const params = {
+  const params: any = {
     model: MODEL,
     max_tokens: 3000,
-    thinking: { type: "adaptive" },
     system,
     messages: [{ role: "user", content: prompt }],
     output_config: {
@@ -105,6 +104,10 @@ export async function generateLead(news: NewsItem): Promise<Lead> {
     },
   };
 
+  if (MODEL.includes("opus") || MODEL.includes("3-7")) {
+    params.thinking = { type: "adaptive" };
+  }
+
   const response = await client().messages.create(params as any);
   return parseJson<Lead>(textOf(response));
 }
@@ -145,13 +148,16 @@ export async function generateScript(news: NewsItem): Promise<string> {
     "Devuelve SOLO el texto del guion, listo para leer en voz alta.",
   ].join("\n");
 
-  const params = {
+  const params: any = {
     model: MODEL,
     max_tokens: 2500,
-    thinking: { type: "adaptive" },
     system,
     messages: [{ role: "user", content: prompt }],
   };
+
+  if (MODEL.includes("opus") || MODEL.includes("3-7")) {
+    params.thinking = { type: "adaptive" };
+  }
 
   const response = await client().messages.create(params as any);
   return textOf(response).trim();
