@@ -4,8 +4,6 @@ import { NEWS_STATUSES, NewsStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/news?status=&category=&q=&order=
-// Lista noticias con filtros opcionales. Por defecto ordena por score desc.
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -15,6 +13,12 @@ export async function GET(req: NextRequest) {
     const order = searchParams.get("order") ?? "score";
 
     const db = getSupabaseAdmin();
+    
+    // Diagnóstico: contar todas las noticias sin filtros
+    const { count: totalNewsCount, error: countErr } = await db
+      .from("news")
+      .select("*", { count: "exact", head: true });
+
     let query = db.from("news").select("*");
 
     if (status && NEWS_STATUSES.includes(status as NewsStatus)) {
@@ -39,7 +43,15 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await query;
     if (error) throw error;
-    return NextResponse.json({ news: data ?? [] });
+
+    return NextResponse.json({ 
+      news: data ?? [],
+      debug: {
+        totalNewsCount,
+        countErr: countErr ? countErr.message : null,
+        params: { status, category, q, order }
+      }
+    });
   } catch (err) {
     return NextResponse.json({ error: message(err) }, { status: 500 });
   }
