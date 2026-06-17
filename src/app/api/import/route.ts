@@ -26,11 +26,32 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    let projectId: string | null = null;
+    try {
+      const body = await req.json();
+      projectId = body?.projectId || null;
+    } catch (e) {
+      // Ignorar si no hay body o no es JSON
+    }
+
+    if (!projectId) {
+      const { searchParams } = new URL(req.url);
+      projectId = searchParams.get("projectId");
+    }
+
+    if (!projectId) {
+      return NextResponse.json(
+        { error: "projectId es obligatorio" },
+        { status: 400 }
+      );
+    }
+
     const db = getSupabaseAdmin();
 
     const { data: sources, error: srcErr } = await db
       .from("sources")
       .select("*")
+      .eq("project_id", projectId)
       .eq("active", true);
     if (srcErr) throw srcErr;
 
@@ -62,6 +83,7 @@ export async function POST(req: NextRequest) {
             .from("news")
             .upsert(
               {
+                project_id: projectId,
                 source_id: source.id,
                 source_name: source.name,
                 title: entry.title,

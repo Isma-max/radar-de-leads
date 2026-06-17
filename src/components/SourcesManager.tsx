@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Source } from "@/lib/types";
 
-export default function SourcesManager() {
+export default function SourcesManager({ projectId }: { projectId?: string }) {
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,9 +16,10 @@ export default function SourcesManager() {
   const [saving, setSaving] = useState(false);
 
   async function load() {
+    if (!projectId) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/sources");
+      const res = await fetch(`/api/sources?projectId=${projectId}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al cargar fuentes");
       setSources(data.sources);
@@ -31,17 +32,18 @@ export default function SourcesManager() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [projectId]);
 
   async function addSource(e: React.FormEvent) {
     e.preventDefault();
+    if (!projectId) return;
     setSaving(true);
     setError(null);
     try {
       const res = await fetch("/api/sources", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, url, category, weight }),
+        body: JSON.stringify({ projectId, name, url, category, weight }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al crear fuente");

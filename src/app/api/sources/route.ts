@@ -3,14 +3,19 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/sources — lista todas las fuentes
-export async function GET() {
+// GET /api/sources — lista todas las fuentes de un proyecto
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const projectId = searchParams.get("projectId");
+
     const db = getSupabaseAdmin();
-    const { data, error } = await db
-      .from("sources")
-      .select("*")
-      .order("created_at", { ascending: true });
+    let query = db.from("sources").select("*");
+    if (projectId) {
+      query = query.eq("project_id", projectId);
+    }
+    const { data, error } = await query.order("created_at", { ascending: true });
+
     if (error) throw error;
     return NextResponse.json({ sources: data ?? [] });
   } catch (err) {
@@ -18,13 +23,21 @@ export async function GET() {
   }
 }
 
-// POST /api/sources — crea una fuente
-// body: { name, url, category?, weight?, active? }
+// POST /api/sources — crea una fuente asociada a un proyecto
+// body: { projectId, name, url, category?, weight?, active? }
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const projectId = body.projectId;
     const name = (body.name ?? "").trim();
     const url = (body.url ?? "").trim();
+    
+    if (!projectId) {
+      return NextResponse.json(
+        { error: "projectId es obligatorio" },
+        { status: 400 }
+      );
+    }
     if (!name || !url) {
       return NextResponse.json(
         { error: "name y url son obligatorios" },
@@ -36,6 +49,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await db
       .from("sources")
       .insert({
+        project_id: projectId,
         name,
         url,
         category: body.category?.trim() || null,

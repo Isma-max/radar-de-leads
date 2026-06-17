@@ -6,7 +6,7 @@ import { NEWS_STATUSES, STATUS_LABELS } from "@/lib/types";
 import { StatusBadge, ScoreBadge } from "./badges";
 import { NewsDetailModal } from "./NewsDetailModal";
 
-export default function Dashboard() {
+export default function Dashboard({ projectId }: { projectId?: string }) {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
@@ -23,10 +23,12 @@ export default function Dashboard() {
   const [busy, setBusy] = useState<"lead" | "script" | null>(null);
 
   const load = useCallback(async () => {
+    if (!projectId) return; // Esperar a que el ID del proyecto esté definido
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
+      params.set("projectId", projectId);
       if (statusFilter) params.set("status", statusFilter);
       if (q) params.set("q", q);
       params.set("order", order);
@@ -39,7 +41,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, q, order]);
+  }, [projectId, statusFilter, q, order]);
 
   useEffect(() => {
     load();
@@ -51,10 +53,15 @@ export default function Dashboard() {
   }
 
   async function runImport() {
+    if (!projectId) return;
     setImporting(true);
     setError(null);
     try {
-      const res = await fetch("/api/import", { method: "POST" });
+      const res = await fetch("/api/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al importar");
       flash(`Importación lista: ${data.totalInserted} noticias nuevas.`);

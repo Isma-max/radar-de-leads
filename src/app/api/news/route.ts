@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const projectId = searchParams.get("projectId");
     const status = searchParams.get("status");
     const category = searchParams.get("category");
     const q = searchParams.get("q");
@@ -14,13 +15,18 @@ export async function GET(req: NextRequest) {
 
     const db = getSupabaseAdmin();
     
-    // Diagnóstico: contar todas las noticias sin filtros
-    const { count: totalNewsCount, error: countErr } = await db
-      .from("news")
-      .select("*", { count: "exact", head: true });
+    // Diagnóstico: contar noticias de este proyecto
+    let countQuery = db.from("news").select("*", { count: "exact", head: true });
+    if (projectId) {
+      countQuery = countQuery.eq("project_id", projectId);
+    }
+    const { count: totalNewsCount, error: countErr } = await countQuery;
 
     let query = db.from("news").select("*");
 
+    if (projectId) {
+      query = query.eq("project_id", projectId);
+    }
     if (status && NEWS_STATUSES.includes(status as NewsStatus)) {
       query = query.eq("status", status);
     }
