@@ -18,7 +18,14 @@ export async function GET() {
   let dbResult = {};
   try {
     const db = getSupabaseAdmin();
-    const { data, error } = await db.from("news").select("*").limit(5);
+    
+    // Ejecutar la consulta con ordenamiento igual que /api/news
+    const query = db.from("news").select("*")
+      .order("score", { ascending: false })
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(5);
+
+    const { data, error } = await query;
     dbResult = {
       success: !error,
       count: data ? data.length : 0,
