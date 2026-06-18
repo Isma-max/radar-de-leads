@@ -97,14 +97,18 @@ export default function SourcesManager({ projectId }: { projectId?: string }) {
   }
 
   return (
-    <div>
-      <h1 className="mb-1 text-xl font-semibold">Fuentes RSS</h1>
-      <p className="mb-5 text-sm text-slate-500">
-        Administra los feeds desde donde se importan las noticias.
-      </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-display text-3xl font-black uppercase tracking-tight text-wemul-navy">
+          Fuentes RSS
+        </h1>
+        <p className="text-[10px] font-extrabold uppercase tracking-widest text-ink-400 mt-1">
+          Administra los feeds desde donde se importan las noticias.
+        </p>
+      </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-wemul-lg border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700 shadow-wemul-sm">
           {error}
         </div>
       )}
@@ -112,27 +116,27 @@ export default function SourcesManager({ projectId }: { projectId?: string }) {
       {/* Form nueva fuente */}
       <form
         onSubmit={addSource}
-        className="mb-6 grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-12"
+        className="grid grid-cols-1 gap-3 rounded-card border border-ink-100 bg-white p-5 shadow-wemul-md sm:grid-cols-12 items-center"
       >
         <input
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nombre (ej: BioBioChile)"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-3"
+          className="rounded-full border border-ink-200 bg-white px-4 py-2 text-xs font-medium text-wemul-navy shadow-wemul-sm focus:border-wemul-blue focus:ring-4 focus:ring-blue-50 focus:outline-none transition-all sm:col-span-3"
         />
         <input
           required
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="URL del feed RSS/Atom"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-5"
+          className="rounded-full border border-ink-200 bg-white px-4 py-2 text-xs font-medium text-wemul-navy shadow-wemul-sm focus:border-wemul-blue focus:ring-4 focus:ring-blue-50 focus:outline-none transition-all sm:col-span-5"
         />
         <input
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           placeholder="Categoría"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+          className="rounded-full border border-ink-200 bg-white px-4 py-2 text-xs font-medium text-wemul-navy shadow-wemul-sm focus:border-wemul-blue focus:ring-4 focus:ring-blue-50 focus:outline-none transition-all sm:col-span-2"
         />
         <input
           type="number"
@@ -141,105 +145,116 @@ export default function SourcesManager({ projectId }: { projectId?: string }) {
           value={weight}
           onChange={(e) => setWeight(parseInt(e.target.value || "0", 10))}
           title="Peso editorial (0-100)"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm sm:col-span-1"
+          className="rounded-full border border-ink-200 bg-white px-4 py-2 text-xs font-bold text-wemul-navy shadow-wemul-sm focus:border-wemul-blue focus:ring-4 focus:ring-blue-50 focus:outline-none transition-all sm:col-span-1 text-center"
         />
         <button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 sm:col-span-1"
+          className="rounded-full bg-wemul-coral px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-wemul-coral transition-all hover:bg-coral-600 active:scale-97 disabled:opacity-50 sm:col-span-1"
         >
           {saving ? "…" : "Añadir"}
         </button>
       </form>
 
       {/* Tabla de fuentes */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-3 py-2">Fuente</th>
-              <th className="px-3 py-2">URL</th>
-              <th className="px-3 py-2">Categoría</th>
-              <th className="px-3 py-2">Peso</th>
-              <th className="px-3 py-2">Activa</th>
-              <th className="px-3 py-2">Última lectura</th>
-              <th className="px-3 py-2"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {loading ? (
+      <div className="overflow-hidden rounded-card border border-ink-100 bg-white shadow-wemul-md">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-ink-100 bg-ink-25 text-[10px] font-extrabold uppercase tracking-widest text-ink-500">
               <tr>
-                <td colSpan={7} className="px-3 py-10 text-center text-slate-400">
-                  Cargando…
-                </td>
+                <th className="px-4 py-3">Fuente</th>
+                <th className="px-4 py-3">URL</th>
+                <th className="px-4 py-3">Categoría</th>
+                <th className="px-4 py-3 text-center">Peso</th>
+                <th className="px-4 py-3 text-center">Activa</th>
+                <th className="px-4 py-3">Última lectura</th>
+                <th className="px-4 py-3 text-right"></th>
               </tr>
-            ) : sources.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-3 py-10 text-center text-slate-400">
-                  No hay fuentes. Añade una arriba.
-                </td>
-              </tr>
-            ) : (
-              sources.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50">
-                  <td className="px-3 py-2 font-medium text-slate-800">
-                    {s.name}
-                  </td>
-                  <td className="max-w-xs truncate px-3 py-2 text-slate-500">
-                    <a
-                      href={s.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="hover:underline"
-                    >
-                      {s.url}
-                    </a>
-                  </td>
-                  <td className="px-3 py-2 text-slate-600">
-                    {s.category ?? "—"}
-                  </td>
-                  <td className="px-3 py-2">
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      defaultValue={s.weight}
-                      onBlur={(e) =>
-                        changeWeight(s, parseInt(e.target.value || "0", 10))
-                      }
-                      className="w-16 rounded border border-slate-300 px-2 py-1 text-sm"
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <button
-                      onClick={() => toggleActive(s)}
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        s.active
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-slate-200 text-slate-500"
-                      }`}
-                    >
-                      {s.active ? "Activa" : "Inactiva"}
-                    </button>
-                  </td>
-                  <td className="px-3 py-2 text-slate-500">
-                    {s.last_fetched_at
-                      ? new Date(s.last_fetched_at).toLocaleString("es-CL")
-                      : "—"}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <button
-                      onClick={() => remove(s.id)}
-                      className="text-xs text-red-600 hover:underline"
-                    >
-                      Eliminar
-                    </button>
+            </thead>
+            <tbody className="divide-y divide-ink-50">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-ink-400 font-medium">
+                    Cargando…
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : sources.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-ink-400 font-medium">
+                    No hay fuentes. Añade una arriba.
+                  </td>
+                </tr>
+              ) : (
+                sources.map((s) => (
+                  <tr key={s.id} className="transition-colors hover:bg-ink-25/40">
+                    <td className="px-4 py-3 font-bold text-wemul-navy">
+                      {s.name}
+                    </td>
+                    <td className="max-w-xs truncate px-4 py-3 text-ink-500 font-semibold">
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-wemul-blue hover:underline"
+                      >
+                        {s.url}
+                      </a>
+                    </td>
+                    <td className="px-4 py-3">
+                      {s.category ? (
+                        <span className="inline-block rounded-md bg-ink-50 border border-ink-100 px-2 py-0.5 text-[10px] font-semibold text-ink-600">
+                          {s.category}
+                        </span>
+                      ) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        defaultValue={s.weight}
+                        onBlur={(e) =>
+                          changeWeight(s, parseInt(e.target.value || "0", 10))
+                        }
+                        className="w-16 rounded-full border border-ink-200 bg-white px-3 py-1 text-center text-xs font-bold text-wemul-navy shadow-wemul-sm focus:border-wemul-blue focus:ring-4 focus:ring-blue-50 focus:outline-none transition-all"
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => toggleActive(s)}
+                        className={`rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider transition-all hover:scale-105 ${
+                          s.active
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                            : "bg-ink-50 text-ink-500 border border-ink-100"
+                        }`}
+                      >
+                        {s.active ? "Activa" : "Inactiva"}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-ink-400 font-medium">
+                      {s.last_fetched_at
+                        ? new Date(s.last_fetched_at).toLocaleString("es-CL", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => remove(s.id)}
+                        className="text-xs font-bold text-wemul-coral hover:underline"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

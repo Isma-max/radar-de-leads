@@ -50,23 +50,28 @@ export default function ProjectSelector() {
   }
 
   if (loading) {
-    return <div className="text-xs text-slate-400">Cargando proyectos...</div>;
+    return <div className="text-[11px] font-medium text-ink-400 animate-pulse">Cargando proyectos...</div>;
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Contexto:</span>
-      <select
-        value={currentProjectId || ""}
-        onChange={(e) => handleProjectChange(e.target.value)}
-        className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-sm font-semibold text-slate-700 shadow-sm focus:border-slate-500 focus:outline-none"
-      >
-        {projects.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
+    <div className="flex items-center gap-2.5">
+      <span className="text-[10px] font-extrabold uppercase tracking-widest text-ink-400">Contexto:</span>
+      <div className="relative">
+        <select
+          value={currentProjectId || ""}
+          onChange={(e) => handleProjectChange(e.target.value)}
+          className="rounded-full border border-ink-200 bg-white pl-4 pr-8 py-1.5 text-xs font-bold text-wemul-navy shadow-wemul-sm hover:border-ink-300 focus:border-wemul-blue focus:ring-4 focus:ring-blue-50 focus:outline-none transition-all cursor-pointer appearance-none"
+        >
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-ink-400">
+          ▼
+        </span>
+      </div>
     </div>
   );
 }
